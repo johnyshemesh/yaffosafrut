@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ספרות קבוצת יפו</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .container {
+      max-width: 950px;
+      margin: auto;
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    .form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    input {
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+    }
+
+    button {
+      padding: 6px 12px;
+      font-size: 14px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      color: white;
+    }
+
+    .add-btn { background: #007bff; }
+    .plus { background: #28a745; }
+    .minus { background: #dc3545; }
+    .sold-btn { background: #6f42c1; }
+
+    .delete-icon {
+      font-size: 20px;
+      cursor: pointer;
+      color: #dc3545;
+      user-select: none;
+    }
+
+    .delete-icon:hover {
+      transform: scale(1.2);
+    }
+
+    .search {
+      margin-bottom: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      border-bottom: 1px solid #ddd;
+      padding: 10px;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    .qty-controls {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    @media (max-width: 600px) {
+      .form {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>ספרות קבוצת יפו</h1>
+
+  <div class="container">
+
+    <!-- הוספת מוצר -->
+    <div class="form">
+      <input type="text" id="productName" placeholder="שם המוצר" />
+      <input type="number" id="productQty" placeholder="כמות התחלתית" min="1" />
+      <button class="add-btn" onclick="addProduct()">הוסף</button>
+    </div>
+
+    <!-- חיפוש -->
+    <div class="search">
+      <input 
+        type="text" 
+        id="searchInput" 
+        placeholder="חיפוש מוצר..." 
+        oninput="renderTable()" />
+    </div>
+
+    <!-- טבלה -->
+    <table>
+      <thead>
+        <tr>
+          <th>שם המוצר</th>
+          <th>כמות</th>
+          <th>פעולות</th>
+        </tr>
+      </thead>
+      <tbody id="inventoryTable"></tbody>
+    </table>
+
+  </div>
+
+  <script>
+    let inventory = JSON.parse(localStorage.getItem("inventory")) || {};
+
+    function saveInventory() {
+      localStorage.setItem("inventory", JSON.stringify(inventory));
+    }
+
+    function addProduct() {
+      const name = productName.value.trim();
+      const qty = parseInt(productQty.value);
+
+      if (!name || qty <= 0) return;
+
+      inventory[name] = (inventory[name] || 0) + qty;
+
+      saveInventory();
+      renderTable();
+
+      productName.value = "";
+      productQty.value = "";
+    }
+
+    function changeQty(name, delta) {
+      inventory[name] += delta;
+      if (inventory[name] < 0) inventory[name] = 0;
+
+      saveInventory();
+      renderTable();
+    }
+
+    function sellProduct(name) {
+      const sold = parseInt(prompt("הכנס כמות שנמכרה:"));
+      if (isNaN(sold) || sold <= 0) return;
+
+      inventory[name] -= sold;
+      if (inventory[name] < 0) inventory[name] = 0;
+
+      saveInventory();
+      renderTable();
+    }
+
+    function deleteProduct(name) {
+      const ok = confirm(`האם למחוק את המוצר "${name}"?`);
+      if (!ok) return;
+
+      delete inventory[name];
+      saveInventory();
+      renderTable();
+    }
+
+    function renderTable() {
+      const search = searchInput.value.toLowerCase();
+      inventoryTable.innerHTML = "";
+
+      for (let name in inventory) {
+        if (!name.toLowerCase().includes(search)) continue;
+
+        inventoryTable.innerHTML += `
+          <tr>
+            <td>${name}</td>
+            <td>${inventory[name]}</td>
+            <td>
+              <div class="qty-controls">
+                <button class="plus" onclick="changeQty('${name}', 1)">+</button>
+                <button class="minus" onclick="changeQty('${name}', -1)">−</button>
+                <button class="sold-btn" onclick="sellProduct('${name}')">נמכר</button>
+                <span 
+                  class="delete-icon" 
+                  title="מחק מוצר"
+                  onclick="deleteProduct('${name}')">
+                  🗑️
+                </span>
+              </div>
+            </td>
+          </tr>
+        `;
+      }
+    }
+
+    renderTable();
+  </script>
+
+</body>
+</html>
